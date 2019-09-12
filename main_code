@@ -1,0 +1,238 @@
+from tkinter import *
+from PIL import Image, ImageTk
+import requests
+from bs4 import BeautifulSoup
+
+
+def football_scrape(mid):
+    page = None
+    if page is None:
+        page = requests.get("https://www.espn.in/football/match?gameId="+mid)  # example: 480536
+    page_html = page.text
+    soup = BeautifulSoup(page_html, 'html.parser')
+
+    try:
+        team1_name = soup.find('div', class_='team away').find_next('div', class_='team__content').find_next('div', class_='team-container').find_next('div', class_='team-info').\
+            find_next('div', class_='team-info-wrapper').find_next('span', class_='short-name').text
+        # print(team1_name)
+    except AttributeError:
+        final_text = "Invalid Match ID"
+        return final_text
+
+    team1_name_abbrev = soup.find('div', class_='team away').find_next('div', class_='team__content').find_next('div', class_='team-container').find_next('div', class_='team-info'). \
+        find_next('div', class_='team-info-wrapper').find_next('span', class_='abbrev').text
+
+    team2_name = soup.find('div', class_='team home').find_next('div', class_='team__content').find_next('div', class_='team-container').find_next('div', class_='team-info').\
+        find_next('div', class_='team-info-wrapper').find_next('span', class_='short-name').text
+
+    team2_name_abbrev = soup.find('div', class_='team home').find_next('div', class_='team__content').find_next('div', class_='team-container').find_next('div', class_='team-info'). \
+        find_next('div', class_='team-info-wrapper').find_next('span', class_='abbrev').text
+    # print(team2_name)
+
+    score = soup.find('div', class_='score-container').find_next('span', class_='score icon-font-after').text.strip()\
+            + "-" + soup.find('div', class_='score-container').find_next('span', class_='score icon-font-before').text.strip()
+    # print(score)
+
+    mat_time = soup.find('div', class_='competitors sm-score').find_next('div', class_='game-status').find_next('span', class_='game-time').text
+    if mat_time[:-1] == "'":
+        mat_time = "Live: " + mat_time
+    # print(mat_time)
+
+    try:
+        mat_status = ", " + soup.find('div', class_='game-details footer soccer post home-winner').\
+            find_next('div', class_='wrap').find_next('div', class_='competitors').find_next('div', class_='game-status').text
+    except AttributeError:
+        try:
+            mat_status = ", " + soup.find('div', class_='game-details footer soccer post away-winner').find_next('div', class_='wrap'). \
+                find_next('div', class_='competitors').find_next('div', class_='game-status').text
+        except AttributeError:
+            mat_status = ""
+
+    league_name = soup.find('div', class_='game-details header').text.strip()
+    venue = soup.find('div', class_='content').find_next('ul', class_='gi-group').find_next('li', class_='venue').text
+    venue_short = venue[venue.rfind(":") + 2:]
+
+    final_text = "\n" + team1_name + "  " + score + "  " + team2_name + "\n\n" + mat_time + mat_status + "\n\n" + venue_short + league_name
+    root.title(team1_name_abbrev + " " + score + " " + team2_name_abbrev + " (" + mat_time + ")")
+    root.iconbitmap("C:/Users/nisan/PycharmProjects/Lesson2_Scraping/football_logo.ico")
+    return final_text
+
+
+def cricket_scrape(mid):
+    page = None
+    if page is None:
+        page = requests.get("http://www.espncricinfo.com/icc-champions-trophy-2013/engine/match/" + mid + ".html")  # Example: 1188623
+    page_html = page.text
+    soup = BeautifulSoup(page_html, 'html.parser')
+
+    try:
+        mat_details = soup.find('div', class_='cscore_info-overview').text
+    except AttributeError:
+        final_text = "Invalid Match ID"
+        return final_text
+
+    mat_substr = mat_details[:mat_details.rfind(" at ")]
+
+    team1_fullname = soup.find('li', class_='cscore_item cscore_item--home').find_next('div', class_='cscore_team icon-font-after'). \
+        find_next('div', class_='cscore_truncate').find_next('a').find_next('span', class_='cscore_name cscore_name--short').text
+
+    team1_name = soup.find('li', class_='cscore_item cscore_item--home').find_next('div', class_='cscore_team icon-font-after'). \
+        find_next('div', class_='cscore_truncate').find_next('a').find_next('span', class_='cscore_name cscore_name--abbrev').text
+    # print(team1_name.span.text)
+
+    team1_score = soup.find('li', class_='cscore_item cscore_item--home').find_next('div', class_='cscore_team icon-font-after').find_next('div', class_='cscore_score').text
+    print("\n" + team1_name + " " + team1_score)
+
+    team2_fullname = soup.find('li', class_='cscore_item cscore_item--away').find_next('div', class_='cscore_team icon-font-after'). \
+        find_next('div', class_='cscore_truncate').find_next('a').find_next('span', class_='cscore_name cscore_name--short').text
+
+    team2_name = soup.find('li', class_='cscore_item cscore_item--away').find_next('div', class_='cscore_team icon-font-after').find_next('div', class_='cscore_truncate').\
+        find_next('a').find_next('span', class_='cscore_name cscore_name--abbrev').text
+
+    # print(team2_name.span.text)
+
+    team2_score = soup.find('li', class_='cscore_item cscore_item--away').find_next('div', class_='cscore_team icon-font-after').find_next('div', class_='cscore_score').text
+    print(team2_name + " " + team2_score)
+
+    try:
+        mat_status = soup.find('div', class_='cscore_notes').span.text
+    except AttributeError:
+        mat_status = ""
+
+    if mat_status.rfind(team2_fullname) == -1:
+        mat_stat_short = mat_status.replace(team1_fullname, team1_name)
+        # print(mat_stat_short)
+    else:
+        mat_stat_short = mat_status.replace(team2_fullname, team2_name)
+
+    if mat_stat_short.rfind(" with ") == -1 and mat_stat_short.rfind(" and ") == -1:
+        mat_stat_short = mat_stat_short[:]
+    else:
+        if mat_stat_short.rfind(" and ") == -1:
+            mat_stat_short = mat_stat_short[:mat_stat_short.rfind(" with ")]
+        else:
+            mat_stat_short = mat_stat_short[:mat_stat_short.rfind(" and ")]
+    # ground_time = soup.find('div', class_='col-b').find_next('div', class_='inner-wrapper').find_next('header', class_='inner-header bordered').span.text
+    print(mat_status)
+
+    mat_check = soup.find('div', class_='tertiary-nav-container').find_next('ul', class_='first-group').find_next('li', class_='sub active').find_next('a').span.text
+    if mat_check == 'Live':
+        bat1 = soup.find('div', class_='content').find_next('table').find_next('tbody').find_next('tr'). \
+            find_next('td', class_='col-highlight').find_next('a', class_='short-name').text
+        bat1short = bat1[bat1.rfind(" ") + 1:]
+
+        bat1score = soup.find('div', class_='content').find_next('table').find_next('tbody').find_next('tr').find_next('td').find_next('td').text + " (" + \
+                    soup.find('div', class_='content').find_next('table').find_next('tbody').find_next('tr').find_next('td').find_next('td').find_next('td').text + ")"
+
+        bat1final = bat1short + " " + bat1score
+
+        bat2 = soup.find('div', class_='content').find_next('table').find_next('tbody').find_next('tr').find_next('tr'). \
+            find_next('td', class_='col-highlight').find_next('a', class_='short-name').text
+
+        bat2score = soup.find('div', class_='content').find_next('table').find_next('tbody').find_next('tr').find_next('tr').find_next('td').\
+                        find_next('td').text + " (" + soup.find('div', class_='content').find_next('table').find_next('tbody').find_next('tr').find_next('tr').\
+            find_next('td').find_next('td').find_next('td').text + ")"
+        bat2short = bat2[bat2.rfind(" ") + 1:]
+
+        bat2final = bat2short + " " + bat2score
+
+        bowl = soup.find('div', class_='content').find_next('table').find_next('tbody').find_next('tbody').find_next('tr'). \
+            find_next('td', class_='col-highlight').find_next('a', class_='short-name').text
+        bowlshort = bowl[bowl.rfind(" ") + 1:]
+
+        if bat2short == bowlshort:
+            bat2final =""
+
+        bowlfig = soup.find('div', class_='content').find_next('table').find_next('tbody').find_next('tbody').\
+                      find_next('tr').find_next('td').find_next('td').find_next('td').find_next('td').find_next('td').text + "-" + \
+                  soup.find('div', class_='content').find_next('table').find_next('tbody').find_next('tbody'). \
+                      find_next('tr').find_next('td').find_next('td').find_next('td').find_next('td').text + " (" + \
+                  soup.find('div', class_='content').find_next('table').find_next('tbody').find_next('tbody'). \
+                      find_next('tr').find_next('td').find_next('td').text + ")"
+        bowlfinal = bowlshort + " " + bowlfig
+
+    if mat_check == 'Live':
+        # final_text = mat_substr + team1_name + " " + team1_score + team2_name + " " + team2_score + mat_status + bat1final + bat2final + bowlfinal
+        final_text = team1_name + " " + team1_score + "\nv " + "\n" + team2_name + " " + team2_score + "\n" + mat_stat_short\
+                     + "\n\n" + bat1final + "\t" + bat2final + "\n" + bowlfinal + "\n\n" + mat_details
+        root.title(team1_name + " " + team1_score + " v " + team2_name + " " + team2_score + "   " + mat_stat_short + "   " + bat1final + "   " + bat2final + "   " + bowlfinal)
+    else:
+        final_text = team1_name + " " + team1_score + "\nv " + "\n" + team2_name + " " + team2_score + "\n\n" + mat_status + "\n" + mat_details
+        root.title(team1_name + " " + team1_score + " v " + team2_name + " " + team2_score)
+
+    root.iconbitmap("C:/Users/nisan/PycharmProjects/Lesson2_Scraping/ICC_Icon.ico")
+    return final_text
+
+
+def return_score_football(event=None):
+    info_label = Label(root, text="\nEnter the match ID from ESPN website" + "\n" + "(Example: 539053)", font=("Trebuchet MS", 12))
+    info_label.grid(row=1, column=0, padx=10, pady=10)
+
+    go_button.grid(row=1, column=2, padx=10, pady=10)
+
+    EnteredText.grid(row=1, column=1, padx=10, pady=10)
+    type_sport = "Football"
+    EnteredText.bind("<Return>", new_func_football)
+    go_button.config(command=new_func_football)
+
+
+def return_score_cricket(event=None):
+    info_label = Label(root, text="\nEnter the match ID from ESPN website" + "\n" + "(Example: 1192873)", font=("Trebuchet MS", 12))
+    info_label.grid(row=1, column=0, padx=10, pady=10)
+
+    go_button.grid(row=1, column=2, padx=10, pady=10)
+
+    EnteredText.grid(row=1, column=1, padx=10, pady=10)
+    EnteredText.bind("<Return>", new_func_cricket)
+    go_button.config(command=new_func_cricket)
+
+
+def new_func_football(event=None):
+    match_id = EnteredText.get()
+    result = football_scrape(match_id)
+    if result == "Invalid Match ID":
+        resultLabel.config(text=result, font=("Trebuchet MS", 15), fg="red")
+    else:
+        resultLabel.config(text=result, font=("Trebuchet MS", 15), fg="green")
+    root.after(30000, new_func_football)
+    # EnteredText.delete(0, END)
+
+
+def new_func_cricket(event=None):
+    match_id = EnteredText.get()
+    result = cricket_scrape(match_id)
+    if result == "Invalid Match ID":
+        resultLabel.config(text=result, font=("Trebuchet MS", 15), fg="red")
+    else:
+        resultLabel.config(text=result, font=("Trebuchet MS", 15), fg="green")
+    root.after(30000, new_func_cricket)
+    # EnteredText.delete(0, END)
+
+
+root = Tk()
+root.geometry("700x520")
+root.title('Live Scores')
+
+photo = ImageTk.PhotoImage(file="C:/Users/nisan/PycharmProjects/Lesson3_GUI/sport-arena.jpg")
+w = Label(root, image=photo)
+w.place(relx=.5, rely=.5, anchor="center")
+w.lower()
+
+ask_choice = Label(root, text="Select a sport: ", font=("Trebuchet MS", 12))
+ask_choice.grid(row=0, column=0, padx=10, pady=10)
+
+football_button = Button(root, text="Football", command=return_score_football, font=("Trebuchet MS", 12))
+cricket_button = Button(root, text="Cricket", command=return_score_cricket, font=("Trebuchet MS", 12))
+football_button.grid(row=0, column=1, padx=1, pady=10)
+cricket_button.grid(row=0, column=2, padx=10, pady=10)
+
+go_button = Button(root, text="Go", font=("Trebuchet MS", 12))  # , command=main_func(match_id))
+# go_button.grid(row=1, column=2, padx=10, pady=10)
+EnteredText = Entry(root, width=20, font=("Trebuchet MS", 14))
+EnteredText.focus()
+
+# Create an empty Label to put the result in
+resultLabel = Label(root, text="")
+resultLabel.place(relx=0.5, rely=0.6, anchor="center")
+
+root.mainloop()
